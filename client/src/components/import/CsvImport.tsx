@@ -178,7 +178,7 @@ export function CsvImport() {
             )}
 
             {!mappingIsComplete(mapping) && (
-              <p className="text-sm text-amber-700">
+              <p className="text-sm text-amber-700 dark:text-amber-400">
                 Pick at least a Date, Description, and either an Amount column or both Debit and Credit.
               </p>
             )}

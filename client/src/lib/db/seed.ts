@@ -5,20 +5,25 @@ import { db } from './db';
  * instead of facing an empty page. No budget limits are pre-set — users add
  * their own numbers (limitless buckets don't clutter the dashboard chart).
  */
-const STARTER_BUCKETS: Array<{ name: string; children: string[] }> = [
-  { name: 'Food', children: ['Groceries', 'Dining Out'] },
-  { name: 'Housing', children: ['Rent / Mortgage', 'Utilities'] },
-  { name: 'Car & Transport', children: ['Gas', 'Insurance & Repairs'] },
-  { name: 'Fun', children: ['Entertainment', 'Subscriptions'] },
-  { name: 'Health', children: [] },
-  { name: 'Shopping', children: [] },
+const STARTER_BUCKETS: Array<{ name: string; color: string; children: Array<[string, string]> }> = [
+  { name: 'Food', color: '#10b981', children: [['Groceries', '#10b981'], ['Dining Out', '#14b8a6']] },
+  { name: 'Housing', color: '#6366f1', children: [['Rent / Mortgage', '#6366f1'], ['Utilities', '#8b5cf6']] },
+  { name: 'Car & Transport', color: '#0ea5e9', children: [['Gas', '#06b6d4'], ['Insurance & Repairs', '#0ea5e9']] },
+  { name: 'Fun', color: '#d946ef', children: [['Entertainment', '#d946ef'], ['Subscriptions', '#ec4899']] },
+  { name: 'Health', color: '#84cc16', children: [] },
+  { name: 'Shopping', color: '#64748b', children: [] },
 ];
 
 export async function createStarterBuckets(): Promise<void> {
   for (const parent of STARTER_BUCKETS) {
-    const parentId = await db.buckets.add({ name: parent.name, parentId: null, monthlyLimit: null });
-    for (const child of parent.children) {
-      await db.buckets.add({ name: child, parentId, monthlyLimit: null });
+    const parentId = await db.buckets.add({
+      name: parent.name,
+      parentId: null,
+      monthlyLimit: null,
+      color: parent.color,
+    });
+    for (const [name, color] of parent.children) {
+      await db.buckets.add({ name, parentId, monthlyLimit: null, color });
     }
   }
 }

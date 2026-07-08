@@ -10,7 +10,8 @@ const badgeVariants = cva(
         default: 'border-transparent bg-secondary text-secondary-foreground',
         // Over-budget / uncategorized states pair color with an icon or text
         // label wherever they're used, so meaning never rests on color alone.
-        warning: 'border-amber-300 bg-amber-50 text-amber-900',
+        warning:
+          'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200',
         outline: 'text-foreground',
       },
     },

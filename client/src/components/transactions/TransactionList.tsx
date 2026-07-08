@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { CircleHelp, Wand2 } from 'lucide-react';
 import { db } from '@/lib/db/db';
 import { useAccounts, useAllTransactions, useBuckets } from '@/hooks/useData';
-import { fmtUsdExact, monthKey, monthLabel } from '@/lib/utils';
+import { usePrefs } from '@/lib/prefs';
+import { cn, fmtUsdExact, monthKey, monthLabel } from '@/lib/utils';
 import type { Transaction } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,8 @@ export function TransactionList() {
 
   const uncategorizedCount = transactions.filter((t) => t.bucketId == null).length;
   const accountName = (id: number) => accounts.find((a) => a.id === id)?.name ?? '?';
+  const prefs = usePrefs();
+  const cell = prefs.compactTables ? 'px-3 py-1' : 'p-3';
 
   return (
     <div className="space-y-4">
@@ -96,19 +99,19 @@ export function TransactionList() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
-                  <th className="p-3 font-medium">Date</th>
-                  <th className="p-3 font-medium">Description</th>
-                  <th className="p-3 font-medium">Account</th>
-                  <th className="p-3 text-right font-medium">Amount</th>
-                  <th className="p-3 font-medium">Bucket</th>
-                  <th className="p-3" />
+                  <th className={cn(cell, 'font-medium')}>Date</th>
+                  <th className={cn(cell, 'font-medium')}>Description</th>
+                  <th className={cn(cell, 'font-medium')}>Account</th>
+                  <th className={cn(cell, 'text-right font-medium')}>Amount</th>
+                  <th className={cn(cell, 'font-medium')}>Bucket</th>
+                  <th className={cell} />
                 </tr>
               </thead>
               <tbody>
                 {filtered.slice(0, 500).map((t) => (
                   <tr key={t.id} className="border-b last:border-0 hover:bg-muted/40">
-                    <td className="whitespace-nowrap p-3 tabular-nums">{t.date}</td>
-                    <td className="max-w-64 truncate p-3" title={t.description}>
+                    <td className={cn(cell, 'whitespace-nowrap tabular-nums')}>{t.date}</td>
+                    <td className={cn(cell, 'max-w-64 truncate')} title={t.description}>
                       {t.description}
                       {t.bucketId == null && (
                         <Badge variant="warning" className="ml-2">
@@ -116,9 +119,9 @@ export function TransactionList() {
                         </Badge>
                       )}
                     </td>
-                    <td className="whitespace-nowrap p-3 text-muted-foreground">{accountName(t.accountId)}</td>
-                    <td className="whitespace-nowrap p-3 text-right tabular-nums">{fmtUsdExact(t.amount)}</td>
-                    <td className="p-3">
+                    <td className={cn(cell, 'whitespace-nowrap text-muted-foreground')}>{accountName(t.accountId)}</td>
+                    <td className={cn(cell, 'whitespace-nowrap text-right tabular-nums')}>{fmtUsdExact(t.amount)}</td>
+                    <td className={cell}>
                       {/* Manual assignment always available, independent of rules */}
                       <BucketSelect
                         buckets={buckets}
@@ -127,7 +130,7 @@ export function TransactionList() {
                         className="h-8 w-48 text-xs"
                       />
                     </td>
-                    <td className="p-3">
+                    <td className={cell}>
                       <Button
                         variant="ghost"
                         size="sm"

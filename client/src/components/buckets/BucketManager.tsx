@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { db } from '@/lib/db/db';
 import { createStarterBuckets } from '@/lib/db/seed';
+import { BUCKET_COLOR_PALETTE } from '@/lib/prefs';
+import { cn } from '@/lib/utils';
 import { useBuckets, useCurrentMonthTransactions } from '@/hooks/useData';
 import { bucketSpendTree } from '@/lib/analytics';
 import { fmtUsd } from '@/lib/utils';
@@ -18,6 +20,17 @@ import { BucketSelect } from './BucketSelect';
 interface EditState {
   bucket?: Bucket; // undefined = creating
   defaultParentId: number | null;
+}
+
+function ColorDot({ color }: { color?: string | null }) {
+  if (!color) return null;
+  return (
+    <span
+      className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full align-baseline"
+      style={{ backgroundColor: color }}
+      aria-hidden
+    />
+  );
 }
 
 export function BucketManager() {
@@ -60,7 +73,10 @@ export function BucketManager() {
         <Card key={parent.bucket.id}>
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <div>
-              <CardTitle>{parent.bucket.name}</CardTitle>
+              <CardTitle>
+                <ColorDot color={parent.bucket.color} />
+                {parent.bucket.name}
+              </CardTitle>
               <CardDescription>
                 {fmtUsd(parent.spent)} spent this month
                 {parent.limit != null && (
@@ -120,6 +136,7 @@ export function BucketManager() {
                 {parent.children.map((child) => (
                   <li key={child.bucket.id} className="flex items-center justify-between py-2 text-sm">
                     <span>
+                      <ColorDot color={child.bucket.color} />
                       {child.bucket.name}
                       {child.over && (
                         <Badge variant="warning" className="ml-2">
@@ -188,6 +205,7 @@ function BucketFormDialog({
   const [name, setName] = useState(bucket?.name ?? '');
   const [limit, setLimit] = useState(bucket?.monthlyLimit != null ? String(bucket.monthlyLimit) : '');
   const [parentId, setParentId] = useState<number | null>(bucket?.parentId ?? state.defaultParentId);
+  const [color, setColor] = useState<string | null>(bucket?.color ?? null);
   const parents = buckets.filter((b) => b.parentId == null && b.id !== bucket?.id);
   // A bucket that has children can't itself become a child (2-level UI).
   const hasChildren = bucket != null && buckets.some((b) => b.parentId === bucket.id);
@@ -199,6 +217,7 @@ function BucketFormDialog({
       name: name.trim(),
       parentId: hasChildren ? null : parentId,
       monthlyLimit: limit.trim() === '' ? null : Math.abs(Number(limit)) || null,
+      color,
     };
     if (bucket?.id != null) await db.buckets.put({ ...record, id: bucket.id });
     else await db.buckets.add(record);
@@ -229,6 +248,34 @@ function BucketFormDialog({
             </Select>
           </div>
         )}
+        <div className="space-y-1.5">
+          <Label>Chart color (optional)</Label>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setColor(null)}
+              className={cn(
+                'h-7 rounded-full border px-2 text-xs',
+                color == null ? 'border-foreground font-medium' : 'border-input text-muted-foreground'
+              )}
+            >
+              Auto
+            </button>
+            {BUCKET_COLOR_PALETTE.map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={`Color ${c}`}
+                onClick={() => setColor(c)}
+                className={cn(
+                  'h-7 w-7 rounded-full border-2 transition-transform hover:scale-110',
+                  color === c ? 'border-foreground' : 'border-transparent'
+                )}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="bucket-limit">Monthly budget limit ($, optional)</Label>
           <Input
@@ -288,9 +335,15 @@ function DuplicateBucketDialog({
         name,
         parentId: bucket.parentId,
         monthlyLimit: bucket.monthlyLimit,
+        color: bucket.color,
       });
       for (const child of children) {
-        await db.buckets.add({ name: child.name, parentId: newId, monthlyLimit: child.monthlyLimit });
+        await db.buckets.add({
+          name: child.name,
+          parentId: newId,
+          monthlyLimit: child.monthlyLimit,
+          color: child.color,
+        });
       }
     }
     onClose();

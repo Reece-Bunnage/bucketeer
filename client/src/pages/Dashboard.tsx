@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { CircleHelp } from 'lucide-react';
 import { useAccounts, useAllTransactions, useBuckets, useCurrentMonthTransactions } from '@/hooks/useData';
 import { bucketSpendTree, cashFlowByMonth, uncategorizedSummary } from '@/lib/analytics';
+import { usePrefs } from '@/lib/prefs';
 import { fmtUsd } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { CashFlowChart } from '@/components/dashboard/CashFlowChart';
 import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
 
 export function Dashboard() {
+  const prefs = usePrefs();
   const accounts = useAccounts() ?? [];
   const buckets = useBuckets() ?? [];
   const monthTxs = useCurrentMonthTransactions() ?? [];
@@ -73,11 +75,13 @@ export function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Secondary elements */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <NetWorthCard accounts={accounts} />
-        <CashFlowChart data={cashFlowByMonth(allTxs)} />
-      </div>
+      {/* Secondary elements (toggleable in Settings → Appearance) */}
+      {(prefs.showNetWorth || prefs.showCashFlow) && (
+        <div className={`grid gap-4 ${prefs.showNetWorth && prefs.showCashFlow ? 'lg:grid-cols-2' : ''}`}>
+          {prefs.showNetWorth && <NetWorthCard accounts={accounts} />}
+          {prefs.showCashFlow && <CashFlowChart data={cashFlowByMonth(allTxs, prefs.cashFlowMonths)} />}
+        </div>
+      )}
     </div>
   );
 }

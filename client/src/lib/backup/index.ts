@@ -16,9 +16,12 @@ interface BackupFile {
   transactions: Transaction[];
   buckets: Bucket[];
   rules: Rule[];
+  /** Appearance/dashboard preferences (added later; absent in old backups). */
+  prefs?: unknown;
 }
 
 export async function exportBackup(): Promise<void> {
+  const prefsEntry = await db.meta.get('prefs');
   const backup: BackupFile = {
     app: 'bucketeer',
     version: 1,
@@ -27,6 +30,7 @@ export async function exportBackup(): Promise<void> {
     transactions: await db.transactions.toArray(),
     buckets: await db.buckets.toArray(),
     rules: await db.rules.toArray(),
+    prefs: prefsEntry ? JSON.parse(prefsEntry.value) : undefined,
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -44,12 +48,13 @@ export async function importBackup(file: File): Promise<{ transactions: number; 
   if (parsed.app !== 'bucketeer' || parsed.version !== 1) {
     throw new Error('This file is not a Bucketeer backup (or is from an incompatible version).');
   }
-  await db.transaction('rw', [db.accounts, db.transactions, db.buckets, db.rules], async () => {
+  await db.transaction('rw', [db.accounts, db.transactions, db.buckets, db.rules, db.meta], async () => {
     await Promise.all([db.accounts.clear(), db.transactions.clear(), db.buckets.clear(), db.rules.clear()]);
     await db.accounts.bulkAdd(parsed.accounts ?? []);
     await db.buckets.bulkAdd(parsed.buckets ?? []);
     await db.rules.bulkAdd(parsed.rules ?? []);
     await db.transactions.bulkAdd(parsed.transactions ?? []);
+    if (parsed.prefs) await db.meta.put({ key: 'prefs', value: JSON.stringify(parsed.prefs) });
   });
   return { transactions: parsed.transactions?.length ?? 0, buckets: parsed.buckets?.length ?? 0 };
 }

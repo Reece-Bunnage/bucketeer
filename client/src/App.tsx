@@ -3,6 +3,7 @@ import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
 import { FolderTree, Import, LayoutDashboard, List, Settings as SettingsIcon, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { seedDefaultBucketsOnce } from '@/lib/db/seed';
+import { applyTheme, usePrefs } from '@/lib/prefs';
 import { Dashboard } from '@/pages/Dashboard';
 import { Buckets } from '@/pages/Buckets';
 import { Transactions } from '@/pages/Transactions';
@@ -18,9 +19,17 @@ const NAV = [
 ];
 
 export default function App() {
+  const prefs = usePrefs();
   useEffect(() => {
     void seedDefaultBucketsOnce();
   }, []);
+  useEffect(() => {
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => applyTheme(prefs, mql.matches);
+    apply();
+    mql.addEventListener('change', apply);
+    return () => mql.removeEventListener('change', apply);
+  }, [prefs]);
   return (
     <BrowserRouter>
       <div className="mx-auto flex min-h-screen max-w-6xl">

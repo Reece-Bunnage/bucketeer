@@ -39,6 +39,8 @@ export interface Bucket {
   name: string;
   /** Monthly budget limit in dollars; null = no budget set. */
   monthlyLimit: number | null;
+  /** Optional display color (hex) used in charts and lists. */
+  color?: string | null;
 }
 
 export type MatchType = 'contains' | 'startsWith';
