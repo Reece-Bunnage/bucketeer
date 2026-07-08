@@ -36,6 +36,11 @@ export function Dashboard() {
             — or <Link className="font-medium underline" to="/import">import a CSV statement</Link>.
           </p>
           <p>3. Categorize anything left over on the Transactions page and create rules as you go.</p>
+          <p className="pt-2 text-muted-foreground">
+            Just looking around? <Link className="font-medium underline" to="/settings">Settings → Add
+            sample data</Link> fills the app with demo accounts and transactions you can play with
+            (and remove cleanly later).
+          </p>
         </CardContent>
       </Card>
     );

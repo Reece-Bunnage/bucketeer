@@ -116,6 +116,10 @@ Terminal, `cd bucketeer`, `npm run dev`.
 
 ## Using the app
 
+> **Just want to look around first?** Go to **Settings → Sample data → Add sample data**. You get two
+> demo accounts and a few months of pretend transactions to explore the dashboard and practice
+> creating rules — then one click removes it all cleanly. No bank setup needed.
+
 1. **Buckets** — a starter set (*Food › Groceries*, *Car & Transport › Gas*, etc.) is created for you;
    rename, delete, or add to it, and give buckets monthly budget limits. Sub-bucket budgets
    automatically add up into the parent's total, and the duplicate button makes numbered copies in one
