@@ -1,0 +1,23 @@
+{
+  "name": "bucketeer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first budgeting app for a small group of friends. Client keeps all data in IndexedDB; a local server proxies bank APIs so secrets never reach the browser.",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "preflight": "node scripts/preflight.mjs",
+    "predev": "npm run preflight",
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client",
+    "typecheck": "npm run typecheck -w client"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

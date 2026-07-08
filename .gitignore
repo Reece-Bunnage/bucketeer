@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit these
+.env
+server/.env
+
+# Build output
+dist/
+client/dist/
+
+# IndexedDB backup exports (personal financial data)
+bucketeer-backup*.json
+*-backup-*.json
+
+# Misc
+.DS_Store
+*.local
+npm-debug.log*
