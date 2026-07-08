@@ -130,6 +130,10 @@ Terminal, `cd bucketeer`, `npm run dev`.
    for it, or click **Rule** to create an "always categorize like this" rule (by merchant keyword,
    amount range, and/or account).
 4. **Dashboard** — budget vs. actual per bucket this month, balances across accounts, and cash flow.
+5. **Make it yours** — **Settings → Appearance & dashboard** has light/dark theme, accent colors,
+   chart styles (bars vs. progress bars, bars vs. area), how many months of cash flow to show, which
+   dashboard cards appear, cents vs. rounded dollars, and compact tables. Each bucket can also get its
+   own chart color (edit the bucket). All of it is saved locally and included in backups.
 
 ### CSV import (fallback)
 
