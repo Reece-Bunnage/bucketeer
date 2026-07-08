@@ -1,4 +1,5 @@
 import { ACCENTS, updatePrefs, usePrefs, type AccentName, type Prefs } from '@/lib/prefs';
+import { WidgetToggles } from '@/components/dashboard/CustomizeDashboard';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -103,12 +104,11 @@ export function AppearanceSettings() {
         </div>
 
         <div className="space-y-2">
-          <Label>Dashboard cards</Label>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
-            <Toggle label="Balance across accounts" field="showNetWorth" prefs={prefs} />
-            <Toggle label="Cash flow" field="showCashFlow" prefs={prefs} />
-            <Toggle label="Sub-bucket breakdown table" field="showChildBreakdown" prefs={prefs} />
-          </div>
+          <Label>Dashboard widgets</Label>
+          <p className="text-xs text-muted-foreground">
+            Also available via the Customize button on the dashboard itself.
+          </p>
+          <WidgetToggles />
         </div>
 
         <div className="space-y-2">

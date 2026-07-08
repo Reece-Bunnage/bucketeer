@@ -1,14 +1,25 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CircleHelp } from 'lucide-react';
+import { CircleHelp, SlidersHorizontal } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/lib/db/db';
 import { useAccounts, useAllTransactions, useBuckets, useCurrentMonthTransactions } from '@/hooks/useData';
 import { bucketSpendTree, cashFlowByMonth, uncategorizedSummary } from '@/lib/analytics';
 import { usePrefs } from '@/lib/prefs';
 import { fmtUsd } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BucketBudgetChart } from '@/components/dashboard/BucketBudgetChart';
 import { CashFlowChart } from '@/components/dashboard/CashFlowChart';
 import { NetWorthCard } from '@/components/dashboard/NetWorthCard';
+import { StatTiles } from '@/components/dashboard/StatTiles';
+import { SpendingShareChart } from '@/components/dashboard/SpendingShareChart';
+import { TopMerchantsTable } from '@/components/dashboard/TopMerchantsTable';
+import { LargestTransactionsTable } from '@/components/dashboard/LargestTransactionsTable';
+import { MonthComparisonTable } from '@/components/dashboard/MonthComparisonTable';
+import { SpendingPaceChart } from '@/components/dashboard/SpendingPaceChart';
+import { CustomizeDashboardDialog } from '@/components/dashboard/CustomizeDashboard';
 
 export function Dashboard() {
   const prefs = usePrefs();
@@ -16,6 +27,13 @@ export function Dashboard() {
   const buckets = useBuckets() ?? [];
   const monthTxs = useCurrentMonthTransactions() ?? [];
   const allTxs = useAllTransactions() ?? [];
+  const lastMonthTxs =
+    useLiveQuery(() => {
+      const d = new Date();
+      const key = new Date(d.getFullYear(), d.getMonth() - 1, 1).toISOString().slice(0, 7);
+      return db.transactions.where('date').between(`${key}-01`, `${key}-99`).toArray();
+    }, []) ?? [];
+  const [customizing, setCustomizing] = useState(false);
 
   const tree = bucketSpendTree(buckets, monthTxs);
   const uncat = uncategorizedSummary(monthTxs);
@@ -50,7 +68,14 @@ export function Dashboard() {
 
   return (
     <div className="space-y-4">
-      {/* Primary element: budget vs. actual this month */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <Button variant="outline" size="sm" onClick={() => setCustomizing(true)}>
+          <SlidersHorizontal className="h-3.5 w-3.5" /> Customize
+        </Button>
+      </div>
+
+      {/* Primary element: budget vs. actual this month (always shown) */}
       <Card>
         <CardHeader>
           <CardTitle>Spending by bucket — {monthName}</CardTitle>
@@ -75,13 +100,22 @@ export function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Secondary elements (toggleable in Settings → Appearance) */}
-      {(prefs.showNetWorth || prefs.showCashFlow) && (
-        <div className={`grid gap-4 ${prefs.showNetWorth && prefs.showCashFlow ? 'lg:grid-cols-2' : ''}`}>
-          {prefs.showNetWorth && <NetWorthCard accounts={accounts} />}
-          {prefs.showCashFlow && <CashFlowChart data={cashFlowByMonth(allTxs, prefs.cashFlowMonths)} />}
-        </div>
-      )}
+      {prefs.showStatTiles && <StatTiles monthTxs={monthTxs} />}
+
+      {/* Optional widgets — toggle via Customize */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {prefs.showNetWorth && <NetWorthCard accounts={accounts} />}
+        {prefs.showCashFlow && <CashFlowChart data={cashFlowByMonth(allTxs, prefs.cashFlowMonths)} />}
+        {prefs.showSpendingShare && <SpendingShareChart tree={tree} monthTxs={monthTxs} />}
+        {prefs.showMonthComparison && (
+          <MonthComparisonTable buckets={buckets} thisMonthTxs={monthTxs} lastMonthTxs={lastMonthTxs} />
+        )}
+        {prefs.showSpendingPace && <SpendingPaceChart tree={tree} monthTxs={monthTxs} />}
+        {prefs.showTopMerchants && <TopMerchantsTable monthTxs={monthTxs} />}
+        {prefs.showLargestTransactions && <LargestTransactionsTable monthTxs={monthTxs} buckets={buckets} />}
+      </div>
+
+      {customizing && <CustomizeDashboardDialog onClose={() => setCustomizing(false)} />}
     </div>
   );
 }

@@ -5,13 +5,14 @@ import { db } from './db';
  * instead of facing an empty page. No budget limits are pre-set — users add
  * their own numbers (limitless buckets don't clutter the dashboard chart).
  */
+// Parent colors are a CVD-validated categorical set (see docs/ARCHITECTURE.md).
 const STARTER_BUCKETS: Array<{ name: string; color: string; children: Array<[string, string]> }> = [
-  { name: 'Food', color: '#10b981', children: [['Groceries', '#10b981'], ['Dining Out', '#14b8a6']] },
-  { name: 'Housing', color: '#6366f1', children: [['Rent / Mortgage', '#6366f1'], ['Utilities', '#8b5cf6']] },
-  { name: 'Car & Transport', color: '#0ea5e9', children: [['Gas', '#06b6d4'], ['Insurance & Repairs', '#0ea5e9']] },
-  { name: 'Fun', color: '#d946ef', children: [['Entertainment', '#d946ef'], ['Subscriptions', '#ec4899']] },
-  { name: 'Health', color: '#84cc16', children: [] },
-  { name: 'Shopping', color: '#64748b', children: [] },
+  { name: 'Food', color: '#059669', children: [['Groceries', '#059669'], ['Dining Out', '#0d9488']] },
+  { name: 'Housing', color: '#4f46e5', children: [['Rent / Mortgage', '#4f46e5'], ['Utilities', '#7c3aed']] },
+  { name: 'Car & Transport', color: '#0891b2', children: [['Gas', '#0891b2'], ['Insurance & Repairs', '#2563eb']] },
+  { name: 'Fun', color: '#db2777', children: [['Entertainment', '#db2777'], ['Subscriptions', '#c026d3']] },
+  { name: 'Health', color: '#65a30d', children: [] },
+  { name: 'Shopping', color: '#ea580c', children: [] },
 ];
 
 export async function createStarterBuckets(): Promise<void> {

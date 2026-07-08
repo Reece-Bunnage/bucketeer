@@ -16,6 +16,12 @@ export interface Prefs {
   showNetWorth: boolean;
   showCashFlow: boolean;
   showChildBreakdown: boolean;
+  showStatTiles: boolean;
+  showSpendingShare: boolean;
+  showTopMerchants: boolean;
+  showLargestTransactions: boolean;
+  showMonthComparison: boolean;
+  showSpendingPace: boolean;
   /** Show cents everywhere instead of rounded whole dollars. */
   exactCents: boolean;
   compactTables: boolean;
@@ -30,6 +36,12 @@ export const DEFAULT_PREFS: Prefs = {
   showNetWorth: true,
   showCashFlow: true,
   showChildBreakdown: true,
+  showStatTiles: true,
+  showSpendingShare: true,
+  showTopMerchants: false,
+  showLargestTransactions: false,
+  showMonthComparison: false,
+  showSpendingPace: false,
   exactCents: false,
   compactTables: false,
 };
@@ -46,18 +58,22 @@ export const ACCENTS: Record<AccentName, { label: string; hsl: string; chart: st
   teal: { label: 'Teal', hsl: '173 80% 32%', chart: '#0d9488' },
 };
 
-/** Swatches offered for per-bucket colors (used in charts and bucket lists). */
+/**
+ * Swatches offered for per-bucket colors (used in charts and bucket lists).
+ * Dark enough to hold ≥3:1 contrast on the light surface; the first six match
+ * the CVD-validated starter set.
+ */
 export const BUCKET_COLOR_PALETTE = [
-  '#3b82f6', // blue
-  '#6366f1', // indigo
-  '#8b5cf6', // violet
-  '#d946ef', // fuchsia
-  '#ec4899', // pink
-  '#14b8a6', // teal
-  '#10b981', // emerald
-  '#06b6d4', // cyan
-  '#84cc16', // lime
-  '#64748b', // slate
+  '#059669', // emerald
+  '#4f46e5', // indigo
+  '#0891b2', // cyan
+  '#db2777', // pink
+  '#65a30d', // lime
+  '#ea580c', // orange
+  '#2563eb', // blue
+  '#7c3aed', // violet
+  '#c026d3', // fuchsia
+  '#0d9488', // teal
 ];
 
 /** Reactive prefs (merged over defaults); safe to call in any component. */
