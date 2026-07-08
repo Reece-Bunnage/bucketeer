@@ -120,10 +120,12 @@ Terminal, `cd bucketeer`, `npm run dev`.
 > demo accounts and a few months of pretend transactions to explore the dashboard and practice
 > creating rules — then one click removes it all cleanly. No bank setup needed.
 
-1. **Buckets** — a starter set (*Food › Groceries*, *Car & Transport › Gas*, etc.) is created for you;
-   rename, delete, or add to it, and give buckets monthly budget limits. Sub-bucket budgets
-   automatically add up into the parent's total, and the duplicate button makes numbered copies in one
-   step (e.g. *Week 1–4* under Groceries).
+1. **Buckets** — a starter set (*Food › Groceries*, *Car & Transport › Gas*, etc.) is created for you.
+   "New bucket" opens a picker with dozens of common choices (or create a fully custom one), each
+   bucket can carry a monthly budget limit, and sub-bucket budgets automatically add up into the
+   parent's total. The calendar button on any parent splits it into *Week 1–4* sub-buckets — dividing
+   its budget evenly so you can track spending week by week — and the duplicate button makes numbered
+   copies of any bucket.
 2. **Settings → Connect a bank (Teller)** — log into your bank in the popup; accounts and
    transactions sync in.
 3. **Transactions** — anything the rules don't recognize is flagged **uncategorized**. Pick a bucket

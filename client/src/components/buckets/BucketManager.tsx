@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CalendarDays, Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { db } from '@/lib/db/db';
 import { createStarterBuckets } from '@/lib/db/seed';
 import { BUCKET_COLOR_PALETTE } from '@/lib/prefs';
@@ -16,6 +16,8 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { BucketSelect } from './BucketSelect';
+import { AddBucketDialog } from './AddBucketDialog';
+import { SplitWeeksDialog } from './SplitWeeksDialog';
 
 interface EditState {
   bucket?: Bucket; // undefined = creating
@@ -37,9 +39,11 @@ export function BucketManager() {
   const buckets = useBuckets() ?? [];
   const monthTxs = useCurrentMonthTransactions() ?? [];
   const tree = bucketSpendTree(buckets, monthTxs);
+  const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [deleting, setDeleting] = useState<Bucket | null>(null);
   const [duplicating, setDuplicating] = useState<Bucket | null>(null);
+  const [splitting, setSplitting] = useState<Bucket | null>(null);
 
   return (
     <div className="space-y-4">
@@ -50,7 +54,7 @@ export function BucketManager() {
             Nested spending categories with optional monthly budgets. Parents roll up child spending.
           </p>
         </div>
-        <Button onClick={() => setEditing({ defaultParentId: null })}>
+        <Button onClick={() => setAdding(true)}>
           <Plus className="h-4 w-4" /> New bucket
         </Button>
       </div>
@@ -62,9 +66,14 @@ export function BucketManager() {
               No buckets yet. You can create your own, or start from a ready-made set (Food, Housing,
               Car &amp; Transport…) and rename/delete to taste.
             </p>
-            <Button variant="secondary" onClick={() => createStarterBuckets()}>
-              <Plus className="h-4 w-4" /> Create starter buckets
-            </Button>
+            <div className="flex justify-center gap-2">
+              <Button variant="secondary" onClick={() => createStarterBuckets()}>
+                <Plus className="h-4 w-4" /> Create starter buckets
+              </Button>
+              <Button variant="outline" onClick={() => setAdding(true)}>
+                Pick from the full list
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -102,6 +111,15 @@ export function BucketManager() {
                 onClick={() => setEditing({ defaultParentId: parent.bucket.id! })}
               >
                 <Plus className="h-3.5 w-3.5" /> Sub-bucket
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Split ${parent.bucket.name} into weeks`}
+                title="Split into weekly sub-buckets (Week 1–4)"
+                onClick={() => setSplitting(parent.bucket)}
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant="ghost"
@@ -183,7 +201,20 @@ export function BucketManager() {
         </Card>
       ))}
 
+      {adding && (
+        <AddBucketDialog
+          buckets={buckets}
+          onClose={() => setAdding(false)}
+          onCustom={() => {
+            setAdding(false);
+            setEditing({ defaultParentId: null });
+          }}
+        />
+      )}
       {editing && <BucketFormDialog state={editing} buckets={buckets} onClose={() => setEditing(null)} />}
+      {splitting && (
+        <SplitWeeksDialog bucket={splitting} buckets={buckets} onClose={() => setSplitting(null)} />
+      )}
       {deleting && <DeleteBucketDialog bucket={deleting} buckets={buckets} onClose={() => setDeleting(null)} />}
       {duplicating && (
         <DuplicateBucketDialog bucket={duplicating} buckets={buckets} onClose={() => setDuplicating(null)} />
