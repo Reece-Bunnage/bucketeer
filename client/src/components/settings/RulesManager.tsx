@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Sparkles, Trash2 } from 'lucide-react';
 import { db } from '@/lib/db/db';
 import { useAccounts, useBuckets, useRules } from '@/hooks/useData';
 import { fmtUsd } from '@/lib/utils';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BucketSelect, bucketPath } from '@/components/buckets/BucketSelect';
 import { RuleDialog } from '@/components/transactions/RuleDialog';
+import { RuleLibraryDialog } from './RuleLibraryDialog';
 
 /**
  * Secondary rules screen (the primary flow is "create rule from a
@@ -17,6 +18,8 @@ export function RulesManager() {
   const buckets = useBuckets() ?? [];
   const accounts = useAccounts() ?? [];
   const [creating, setCreating] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   const accountName = (id: number | null) =>
     id == null ? 'any account' : accounts.find((a) => a.id === id)?.name ?? '?';
@@ -27,19 +30,26 @@ export function RulesManager() {
         <div>
           <CardTitle>Categorization rules</CardTitle>
           <CardDescription>
-            When several rules match a transaction, the most specific one (most criteria) wins; ties go
-            to the newest rule. Unmatched transactions stay Uncategorized.
+            When several rules match a transaction, the most specific one (most criteria) wins; ties
+            go to the longer keyword, then the newest rule. Unmatched transactions stay Uncategorized.
           </CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
-          <Plus className="h-3.5 w-3.5" /> New rule
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button size="sm" onClick={() => setLibraryOpen(true)}>
+            <Sparkles className="h-3.5 w-3.5" /> Add common rules
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
+            <Plus className="h-3.5 w-3.5" /> New rule
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
+        {status && <p className="pb-3 text-sm">{status}</p>}
         {rules.length === 0 ? (
           <p className="py-4 text-sm text-muted-foreground">
-            No rules yet. The quickest way to make one: open Transactions and click "Rule" on any
-            transaction.
+            No rules yet. Fastest start: click <strong>Add common rules</strong> above to auto-file
+            phone bills, subscriptions, gas, groceries, Amazon, and more — or open Transactions and
+            click "Rule" on any transaction.
           </p>
         ) : (
           <ul className="divide-y">
@@ -84,6 +94,9 @@ export function RulesManager() {
       </CardContent>
       {creating && (
         <RuleDialog buckets={buckets} accounts={accounts} onClose={() => setCreating(false)} />
+      )}
+      {libraryOpen && (
+        <RuleLibraryDialog buckets={buckets} onClose={() => setLibraryOpen(false)} onDone={setStatus} />
       )}
     </Card>
   );

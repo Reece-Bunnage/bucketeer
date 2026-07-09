@@ -25,9 +25,11 @@ de-duplicates (provider id, or date+amount+description fingerprint) and runs the
 
 ## Rule precedence
 
-Documented in `client/src/lib/rules-engine/index.ts`: most criteria wins, ties go to the newest rule,
-no match ⇒ Uncategorized (`bucketId = null`) and flagged in the UI. Manual assignments are never
-overwritten by rules (retroactive application only touches uncategorized transactions).
+Documented in `client/src/lib/rules-engine/index.ts`: most criteria wins, then longer keyword
+("uber eats" beats "uber"), then newest rule; no match ⇒ Uncategorized (`bucketId = null`) and
+flagged in the UI. Manual assignments are never overwritten by rules (retroactive application only
+touches uncategorized transactions). Pre-built rule packs for common merchants live in
+`client/src/lib/db/ruleLibrary.ts` (Settings → Rules → "Add common rules").
 
 ## Buckets
 

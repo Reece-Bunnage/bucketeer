@@ -128,9 +128,13 @@ Terminal, `cd bucketeer`, `npm run dev`.
    copies of any bucket.
 2. **Settings → Connect a bank (Teller)** — log into your bank in the popup; accounts and
    transactions sync in.
-3. **Transactions** — anything the rules don't recognize is flagged **uncategorized**. Pick a bucket
-   for it, or click **Rule** to create an "always categorize like this" rule (by merchant keyword,
-   amount range, and/or account).
+3. **Rules** — start with **Settings → Rules → Add common rules**: ready-made packs that auto-file
+   phone/internet bills, subscriptions (Netflix, Spotify…), gas stations, car payments & insurance,
+   grocery chains, fast food & delivery, Amazon & big-box, clothing stores, utilities, gyms, and pet
+   stores into sensible buckets (created for you, or pick your own). Anything the rules don't
+   recognize is flagged **uncategorized** on the Transactions page — pick a bucket for it, or click
+   **Rule** to create an "always categorize like this" rule (by merchant keyword, amount range,
+   and/or account).
 4. **Dashboard** — budget vs. actual per bucket is always front and center; the **Customize** button
    lets you add or hide the other widgets: at-a-glance stat tiles (income/spending/net/savings rate),
    account balances, cash flow, a spending-share donut, this-month-vs-last-month comparison, top

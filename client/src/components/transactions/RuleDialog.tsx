@@ -123,8 +123,9 @@ export function RuleDialog({ fromTransaction, buckets, accounts, onClose }: Rule
         </div>
 
         <p className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
-          When several rules match, the one with the most criteria wins; ties go to the newest rule.
-          Saving also applies this rule to existing <em>uncategorized</em> transactions.
+          When several rules match, the one with the most criteria wins; ties go to the longer
+          keyword, then the newest rule. Saving also applies this rule to existing{' '}
+          <em>uncategorized</em> transactions.
         </p>
 
         <div className="flex justify-end gap-2">

@@ -12,7 +12,9 @@ type TxLike = Pick<Transaction, 'description' | 'amount' | 'accountId'>;
  *   1. The MOST SPECIFIC rule wins — i.e. the one with the most criteria
  *      filled in. A rule matching "starbucks" AND amount $3–$10 (2 criteria)
  *      beats a rule matching just "starbucks" (1 criterion).
- *   2. If still tied, the MOST RECENTLY CREATED rule wins, on the theory
+ *   2. If tied, the LONGER KEYWORD wins — "uber eats" beats "uber" on an
+ *      Uber Eats charge, because the longer text is the closer description.
+ *   3. If still tied, the MOST RECENTLY CREATED rule wins, on the theory
  *      that the newest rule best reflects the user's current intent.
  * A transaction matched by no rule stays Uncategorized (bucketId = null)
  * and is flagged in the transactions view.
@@ -47,7 +49,10 @@ export function matchTransaction(tx: TxLike, rules: Rule[]): Rule | null {
   const matches = rules.filter((r) => ruleSpecificity(r) > 0 && ruleMatches(r, tx));
   if (matches.length === 0) return null;
   matches.sort(
-    (a, b) => ruleSpecificity(b) - ruleSpecificity(a) || b.createdAt.localeCompare(a.createdAt)
+    (a, b) =>
+      ruleSpecificity(b) - ruleSpecificity(a) ||
+      (b.keyword?.length ?? 0) - (a.keyword?.length ?? 0) ||
+      b.createdAt.localeCompare(a.createdAt)
   );
   return matches[0];
 }
