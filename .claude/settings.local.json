@@ -9,7 +9,8 @@
       "Bash(cp validate_palette.js /private/tmp/claude-501/-Users-reece-Developer-Dev-TestFable/6454a95f-e3bc-41d3-91d2-40d6a8108c3a/scratchpad/validate_palette.mjs)",
       "Bash(node /private/tmp/claude-501/-Users-reece-Developer-Dev-TestFable/6454a95f-e3bc-41d3-91d2-40d6a8108c3a/scratchpad/validate_palette.mjs \"#10b981,#6366f1,#0ea5e9,#d946ef,#84cc16,#64748b\" --mode light)",
       "Bash(echo \"---exit $?\")",
-      "Bash(node /private/tmp/claude-501/-Users-reece-Developer-Dev-TestFable/6454a95f-e3bc-41d3-91d2-40d6a8108c3a/scratchpad/pv/validate_palette.js '#059669,#4f46e5,#0891b2,#db2777,#65a30d,#ea580c' --mode light)"
+      "Bash(node /private/tmp/claude-501/-Users-reece-Developer-Dev-TestFable/6454a95f-e3bc-41d3-91d2-40d6a8108c3a/scratchpad/pv/validate_palette.js '#059669,#4f46e5,#0891b2,#db2777,#65a30d,#ea580c' --mode light)",
+      "Bash(git commit -q -m 'Dashboard: widget gallery with visual previews and drag-and-drop reordering *)"
     ]
   }
 }

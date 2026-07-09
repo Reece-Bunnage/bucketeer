@@ -5,7 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db/db';
 import { useAccounts, useAllTransactions, useBuckets, useCurrentMonthTransactions } from '@/hooks/useData';
 import { bucketSpendTree, cashFlowByMonth, uncategorizedSummary } from '@/lib/analytics';
-import { usePrefs } from '@/lib/prefs';
+import { effectiveWidgetOrder, updatePrefs, usePrefs } from '@/lib/prefs';
 import { fmtUsd } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { LargestTransactionsTable } from '@/components/dashboard/LargestTransact
 import { MonthComparisonTable } from '@/components/dashboard/MonthComparisonTable';
 import { SpendingPaceChart } from '@/components/dashboard/SpendingPaceChart';
 import { CustomizeDashboardDialog } from '@/components/dashboard/CustomizeDashboard';
+import { DraggableWidget } from '@/components/dashboard/DraggableWidget';
 
 export function Dashboard() {
   const prefs = usePrefs();
@@ -34,10 +35,35 @@ export function Dashboard() {
       return db.transactions.where('date').between(`${key}-01`, `${key}-99`).toArray();
     }, []) ?? [];
   const [customizing, setCustomizing] = useState(false);
+  const [dragging, setDragging] = useState<string | null>(null);
 
   const tree = bucketSpendTree(buckets, monthTxs);
   const uncat = uncategorizedSummary(monthTxs);
   const monthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  // Orderable widgets, keyed to match prefs.widgetOrder / DEFAULT_WIDGET_ORDER.
+  const registry: Record<string, { enabled: boolean; fullWidth?: boolean; node: React.ReactNode }> = {
+    statTiles: { enabled: prefs.showStatTiles, fullWidth: true, node: <StatTiles monthTxs={monthTxs} /> },
+    netWorth: { enabled: prefs.showNetWorth, node: <NetWorthCard accounts={accounts} /> },
+    cashFlow: {
+      enabled: prefs.showCashFlow,
+      node: <CashFlowChart data={cashFlowByMonth(allTxs, prefs.cashFlowMonths)} />,
+    },
+    spendingShare: {
+      enabled: prefs.showSpendingShare,
+      node: <SpendingShareChart tree={tree} monthTxs={monthTxs} />,
+    },
+    monthComparison: {
+      enabled: prefs.showMonthComparison,
+      node: <MonthComparisonTable buckets={buckets} thisMonthTxs={monthTxs} lastMonthTxs={lastMonthTxs} />,
+    },
+    spendingPace: { enabled: prefs.showSpendingPace, node: <SpendingPaceChart tree={tree} monthTxs={monthTxs} /> },
+    topMerchants: { enabled: prefs.showTopMerchants, node: <TopMerchantsTable monthTxs={monthTxs} /> },
+    largestTransactions: {
+      enabled: prefs.showLargestTransactions,
+      node: <LargestTransactionsTable monthTxs={monthTxs} buckets={buckets} />,
+    },
+  };
 
   if (allTxs.length === 0) {
     return (
@@ -100,19 +126,27 @@ export function Dashboard() {
         </CardContent>
       </Card>
 
-      {prefs.showStatTiles && <StatTiles monthTxs={monthTxs} />}
-
-      {/* Optional widgets — toggle via Customize */}
+      {/* Optional widgets — toggle via Customize, drag the grip handle to reorder */}
       <div className="grid gap-4 lg:grid-cols-2">
-        {prefs.showNetWorth && <NetWorthCard accounts={accounts} />}
-        {prefs.showCashFlow && <CashFlowChart data={cashFlowByMonth(allTxs, prefs.cashFlowMonths)} />}
-        {prefs.showSpendingShare && <SpendingShareChart tree={tree} monthTxs={monthTxs} />}
-        {prefs.showMonthComparison && (
-          <MonthComparisonTable buckets={buckets} thisMonthTxs={monthTxs} lastMonthTxs={lastMonthTxs} />
-        )}
-        {prefs.showSpendingPace && <SpendingPaceChart tree={tree} monthTxs={monthTxs} />}
-        {prefs.showTopMerchants && <TopMerchantsTable monthTxs={monthTxs} />}
-        {prefs.showLargestTransactions && <LargestTransactionsTable monthTxs={monthTxs} buckets={buckets} />}
+        {effectiveWidgetOrder(prefs)
+          .filter((key) => registry[key]?.enabled)
+          .map((key) => (
+            <DraggableWidget
+              key={key}
+              id={key}
+              dragging={dragging}
+              setDragging={setDragging}
+              onDropOn={(target) => {
+                if (!dragging || dragging === target) return;
+                const order = effectiveWidgetOrder(prefs).filter((k) => k !== dragging);
+                order.splice(order.indexOf(target), 0, dragging);
+                void updatePrefs({ widgetOrder: order });
+              }}
+              className={registry[key].fullWidth ? 'lg:col-span-2' : undefined}
+            >
+              {registry[key].node}
+            </DraggableWidget>
+          ))}
       </div>
 
       {customizing && <CustomizeDashboardDialog onClose={() => setCustomizing(false)} />}

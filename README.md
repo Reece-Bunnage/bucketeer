@@ -136,10 +136,11 @@ Terminal, `cd bucketeer`, `npm run dev`.
    **Rule** to create an "always categorize like this" rule (by merchant keyword, amount range,
    and/or account).
 4. **Dashboard** — budget vs. actual per bucket is always front and center; the **Customize** button
-   lets you add or hide the other widgets: at-a-glance stat tiles (income/spending/net/savings rate),
-   account balances, cash flow, a spending-share donut, this-month-vs-last-month comparison, top
-   merchants, largest transactions, and a spending-pace line that shows whether you're ahead of or
-   behind your budget for the month.
+   opens a gallery of widgets — each shown as a small preview — to add or hide: at-a-glance stat
+   tiles (income/spending/net/savings rate), account balances, cash flow, a spending-share donut,
+   this-month-vs-last-month comparison, top merchants, largest transactions, and a spending-pace line
+   that shows whether you're ahead of or behind budget. Hover over any widget and drag the ⠿ handle
+   to rearrange the layout; the order is remembered.
 5. **Make it yours** — **Settings → Appearance & dashboard** has light/dark theme, accent colors,
    chart styles (bars vs. progress bars, bars vs. area), how many months of cash flow to show, which
    dashboard cards appear, cents vs. rounded dollars, and compact tables. Each bucket can also get its

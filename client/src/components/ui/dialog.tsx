@@ -7,10 +7,12 @@ interface DialogProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  /** Wider layout for gallery-style content. */
+  wide?: boolean;
 }
 
 /** Simple controlled modal (Shadcn-styled, no Radix dependency). */
-export function Dialog({ open, onClose, title, children }: DialogProps) {
+export function Dialog({ open, onClose, title, children, wide }: DialogProps) {
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -26,7 +28,7 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-lg border bg-background p-6 shadow-lg"
+        className={`relative z-10 max-h-[85vh] w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} overflow-y-auto rounded-lg border bg-background p-6 shadow-lg`}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{title}</h2>

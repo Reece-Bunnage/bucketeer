@@ -25,6 +25,26 @@ export interface Prefs {
   /** Show cents everywhere instead of rounded whole dollars. */
   exactCents: boolean;
   compactTables: boolean;
+  /** Dashboard widget order (drag-and-drop). Keys from DEFAULT_WIDGET_ORDER. */
+  widgetOrder: string[];
+}
+
+export const DEFAULT_WIDGET_ORDER = [
+  'statTiles',
+  'netWorth',
+  'cashFlow',
+  'spendingShare',
+  'monthComparison',
+  'spendingPace',
+  'topMerchants',
+  'largestTransactions',
+];
+
+/** Stored order, cleaned of stale keys, with any new widgets appended. */
+export function effectiveWidgetOrder(prefs: Prefs): string[] {
+  const order = prefs.widgetOrder.filter((k) => DEFAULT_WIDGET_ORDER.includes(k));
+  for (const k of DEFAULT_WIDGET_ORDER) if (!order.includes(k)) order.push(k);
+  return order;
 }
 
 export const DEFAULT_PREFS: Prefs = {
@@ -44,6 +64,7 @@ export const DEFAULT_PREFS: Prefs = {
   showSpendingPace: false,
   exactCents: false,
   compactTables: false,
+  widgetOrder: DEFAULT_WIDGET_ORDER,
 };
 
 export type AccentName = 'blue' | 'violet' | 'green' | 'orange' | 'rose' | 'teal';
