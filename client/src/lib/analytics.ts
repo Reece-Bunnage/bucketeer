@@ -56,6 +56,45 @@ export function uncategorizedSummary(monthTransactions: Transaction[]) {
   return { count: txs.length, spent: txs.filter((t) => t.amount < 0).reduce((s, t) => s + -t.amount, 0) };
 }
 
+export interface BudgetSuggestion {
+  bucket: Bucket;
+  current: number | null;
+  /** Average own spending over the last 3 complete months, rounded up to $10. */
+  suggested: number;
+}
+
+/**
+ * Propose monthly limits from spending history. Uses each bucket's OWN
+ * spending (transactions filed directly in it, not child rollups — parents
+ * get their number from the rollup anyway), averaged over the last 3
+ * complete calendar months, skipping months with no data.
+ */
+export function suggestBudgets(buckets: Bucket[], transactions: Transaction[]): BudgetSuggestion[] {
+  const now = new Date();
+  const monthKeys: string[] = [];
+  for (let i = 1; i <= 3; i++) {
+    monthKeys.push(new Date(now.getFullYear(), now.getMonth() - i, 1).toISOString().slice(0, 7));
+  }
+  const spendByBucketMonth = new Map<string, number>();
+  for (const tx of transactions) {
+    if (tx.amount >= 0 || tx.bucketId == null) continue;
+    const mk = monthKey(tx.date);
+    if (!monthKeys.includes(mk)) continue;
+    const key = `${tx.bucketId}|${mk}`;
+    spendByBucketMonth.set(key, (spendByBucketMonth.get(key) ?? 0) + -tx.amount);
+  }
+  const suggestions: BudgetSuggestion[] = [];
+  for (const bucket of buckets) {
+    const monthly = monthKeys
+      .map((mk) => spendByBucketMonth.get(`${bucket.id}|${mk}`))
+      .filter((v): v is number => v != null && v > 0);
+    if (monthly.length === 0) continue;
+    const avg = monthly.reduce((sum, v) => sum + v, 0) / monthly.length;
+    suggestions.push({ bucket, current: bucket.monthlyLimit, suggested: Math.ceil(avg / 10) * 10 });
+  }
+  return suggestions.sort((a, b) => b.suggested - a.suggested);
+}
+
 /** Headline totals for one month's transactions. */
 export function monthTotals(monthTransactions: Transaction[]) {
   let income = 0;

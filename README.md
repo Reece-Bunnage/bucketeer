@@ -125,7 +125,9 @@ Terminal, `cd bucketeer`, `npm run dev`.
    bucket can carry a monthly budget limit, and sub-bucket budgets automatically add up into the
    parent's total. The calendar button on any parent splits it into *Week 1–4* sub-buckets — dividing
    its budget evenly so you can track spending week by week — and the duplicate button makes numbered
-   copies of any bucket.
+   copies of any bucket. Every bucket shows a live progress bar; click any budget number to edit it in
+   place; **Suggest budgets** proposes limits from your last 3 months of spending (preview before
+   applying); parent cards collapse; and clicking a bucket name jumps to its transactions.
 2. **Settings → Connect a bank (Teller)** — log into your bank in the popup; accounts and
    transactions sync in.
 3. **Rules** — start with **Settings → Rules → Add common rules**: ready-made packs that auto-file
@@ -134,7 +136,8 @@ Terminal, `cd bucketeer`, `npm run dev`.
    stores into sensible buckets (created for you, or pick your own). Anything the rules don't
    recognize is flagged **uncategorized** on the Transactions page — pick a bucket for it, or click
    **Rule** to create an "always categorize like this" rule (by merchant keyword, amount range,
-   and/or account).
+   and/or account). The Transactions page has text search, month/account/bucket filters, and
+   checkboxes for bulk-assigning many transactions to a bucket at once.
 4. **Dashboard** — budget vs. actual per bucket is always front and center; the **Customize** button
    opens a gallery of widgets — each shown as a small preview — to add or hide: at-a-glance stat
    tiles (income/spending/net/savings rate), account balances, cash flow, a spending-share donut,

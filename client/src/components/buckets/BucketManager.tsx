@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { CalendarDays, Copy, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CalendarDays, ChevronDown, ChevronRight, Copy, Lightbulb, Pencil, Plus, Trash2 } from 'lucide-react';
 import { db } from '@/lib/db/db';
 import { createStarterBuckets } from '@/lib/db/seed';
-import { BUCKET_COLOR_PALETTE } from '@/lib/prefs';
+import { ACCENTS, BUCKET_COLOR_PALETTE, updatePrefs, usePrefs } from '@/lib/prefs';
 import { cn } from '@/lib/utils';
-import { useBuckets, useCurrentMonthTransactions } from '@/hooks/useData';
+import { useAllTransactions, useBuckets, useCurrentMonthTransactions } from '@/hooks/useData';
 import { bucketSpendTree } from '@/lib/analytics';
-import { fmtUsd } from '@/lib/utils';
+import { fmtUsd, fmtUsdExact } from '@/lib/utils';
 import type { Bucket } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { BucketSelect } from './BucketSelect';
 import { AddBucketDialog } from './AddBucketDialog';
 import { SplitWeeksDialog } from './SplitWeeksDialog';
+import { SuggestBudgetsDialog } from './SuggestBudgetsDialog';
 
 interface EditState {
   bucket?: Bucket; // undefined = creating
@@ -35,29 +37,163 @@ function ColorDot({ color }: { color?: string | null }) {
   );
 }
 
+/** Slim spent-vs-budget fill bar (amber when over; icon/text badges carry the state too). */
+function Bar({ spent, limit, color, over }: { spent: number; limit: number | null; color?: string | null; over: boolean }) {
+  const prefs = usePrefs();
+  if (limit == null || limit <= 0) return null;
+  const pct = Math.min(100, (spent / limit) * 100);
+  const fill = over ? '#b45309' : color ?? ACCENTS[prefs.accent]?.chart ?? ACCENTS.blue.chart;
+  return (
+    <div className="h-2 overflow-hidden rounded-full bg-muted">
+      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: fill }} />
+    </div>
+  );
+}
+
+/** Click-to-edit monthly limit — Enter/blur saves, Escape cancels. */
+function InlineLimit({ bucket }: { bucket: Bucket }) {
+  const prefs = usePrefs();
+  const fmt = prefs.exactCents ? fmtUsdExact : fmtUsd;
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState('');
+
+  const save = async () => {
+    const n = value.trim() === '' ? null : Math.abs(Number(value)) || null;
+    await db.buckets.update(bucket.id!, { monthlyLimit: n });
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <Input
+        autoFocus
+        type="number"
+        min="0"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') void save();
+          if (e.key === 'Escape') setEditing(false);
+        }}
+        className="inline-block h-7 w-24 text-xs"
+        aria-label={`Monthly budget for ${bucket.name}`}
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      title="Click to edit this bucket's monthly budget"
+      onClick={() => {
+        setValue(bucket.monthlyLimit != null ? String(bucket.monthlyLimit) : '');
+        setEditing(true);
+      }}
+      className="rounded px-0.5 tabular-nums text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+    >
+      {bucket.monthlyLimit != null ? `${fmt(bucket.monthlyLimit)}/mo` : 'Set budget'}
+    </button>
+  );
+}
+
 export function BucketManager() {
   const buckets = useBuckets() ?? [];
   const monthTxs = useCurrentMonthTransactions() ?? [];
+  const allTxs = useAllTransactions() ?? [];
+  const prefs = usePrefs();
+  const fmt = prefs.exactCents ? fmtUsdExact : fmtUsd;
   const tree = bucketSpendTree(buckets, monthTxs);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<EditState | null>(null);
   const [deleting, setDeleting] = useState<Bucket | null>(null);
   const [duplicating, setDuplicating] = useState<Bucket | null>(null);
   const [splitting, setSplitting] = useState<Bucket | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const totals = tree.reduce(
+    (acc, n) => {
+      acc.spent += n.spent;
+      if (n.limit != null) acc.budget += n.limit;
+      return acc;
+    },
+    { spent: 0, budget: 0 }
+  );
+
+  // Search: a parent shows if it matches (all children kept) or any child matches.
+  const q = query.trim().toLowerCase();
+  const matches = (name: string) => name.toLowerCase().includes(q);
+  const visibleTree =
+    q === ''
+      ? tree
+      : tree
+          .map((p) =>
+            matches(p.bucket.name) ? p : { ...p, children: p.children.filter((c) => matches(c.bucket.name)) }
+          )
+          .filter((p) => matches(p.bucket.name) || p.children.length > 0);
+
+  const collapsed = new Set(prefs.collapsedBuckets);
+  const toggleCollapse = (id: number) =>
+    updatePrefs({
+      collapsedBuckets: collapsed.has(id)
+        ? prefs.collapsedBuckets.filter((x) => x !== id)
+        : [...prefs.collapsedBuckets, id],
+    });
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold">Buckets</h1>
           <p className="text-sm text-muted-foreground">
             Nested spending categories with optional monthly budgets. Parents roll up child spending.
           </p>
         </div>
-        <Button onClick={() => setAdding(true)}>
-          <Plus className="h-4 w-4" /> New bucket
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setSuggesting(true)}>
+            <Lightbulb className="h-4 w-4" /> Suggest budgets
+          </Button>
+          <Button onClick={() => setAdding(true)}>
+            <Plus className="h-4 w-4" /> New bucket
+          </Button>
+        </div>
       </div>
+
+      {tree.length > 0 && (
+        <Card>
+          <CardContent className="space-y-2 py-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+              <span className="font-medium">
+                {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </span>
+              <span className="tabular-nums text-muted-foreground">
+                {fmt(totals.spent)} spent
+                {totals.budget > 0 && (
+                  <>
+                    {' '}of {fmt(totals.budget)} budgeted · {fmt(Math.max(0, totals.budget - totals.spent))} left
+                  </>
+                )}
+              </span>
+            </div>
+            <Bar
+              spent={totals.spent}
+              limit={totals.budget > 0 ? totals.budget : null}
+              color={null}
+              over={totals.budget > 0 && totals.spent > totals.budget}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {buckets.length > 5 && (
+        <Input
+          placeholder="Search buckets…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="max-w-xs"
+          aria-label="Search buckets"
+        />
+      )}
 
       {tree.length === 0 && (
         <Card>
@@ -78,25 +214,34 @@ export function BucketManager() {
         </Card>
       )}
 
-      {tree.map((parent) => (
+      {visibleTree.map((parent) => (
         <Card key={parent.bucket.id}>
           <CardHeader className="flex-row items-center justify-between space-y-0">
-            <div>
+            <div className="min-w-0">
               <CardTitle>
                 <ColorDot color={parent.bucket.color} />
-                {parent.bucket.name}
+                <Link
+                  to={`/transactions?bucket=${parent.bucket.id}`}
+                  className="hover:underline"
+                  title={`View ${parent.bucket.name} transactions`}
+                >
+                  {parent.bucket.name}
+                </Link>
               </CardTitle>
               <CardDescription>
-                {fmtUsd(parent.spent)} spent this month
-                {parent.limit != null && (
+                {fmt(parent.spent)} spent this month
+                {parent.limit != null && parent.childLimit != null && (
                   <>
-                    {' '}of {fmtUsd(parent.limit)} budget
-                    {parent.childLimit != null && parent.ownLimit != null && (
-                      <> ({fmtUsd(parent.ownLimit)} own + {fmtUsd(parent.childLimit)} from sub-buckets)</>
+                    {' '}of {fmt(parent.limit)} budget
+                    {parent.ownLimit != null && (
+                      <> ({fmt(parent.ownLimit)} own + {fmt(parent.childLimit)} from sub-buckets)</>
                     )}
-                    {parent.childLimit != null && parent.ownLimit == null && <> (from sub-buckets)</>}
+                    {parent.ownLimit == null && <> (from sub-buckets)</>}
                   </>
                 )}
+                <span className="ml-2">
+                  <InlineLimit bucket={parent.bucket} />
+                </span>
                 {parent.over && (
                   <Badge variant="warning" className="ml-2">
                     over budget
@@ -104,7 +249,21 @@ export function BucketManager() {
                 )}
               </CardDescription>
             </div>
-            <div className="flex gap-1">
+            <div className="flex shrink-0 gap-1">
+              {parent.children.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={collapsed.has(parent.bucket.id!) ? 'Expand sub-buckets' : 'Collapse sub-buckets'}
+                  onClick={() => toggleCollapse(parent.bucket.id!)}
+                >
+                  {collapsed.has(parent.bucket.id!) ? (
+                    <ChevronRight className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -148,25 +307,32 @@ export function BucketManager() {
               </Button>
             </div>
           </CardHeader>
-          {parent.children.length > 0 && (
-            <CardContent>
-              <ul className="divide-y">
+          {(parent.limit != null || parent.children.length > 0) && (
+          <CardContent>
+            <Bar spent={parent.spent} limit={parent.limit} color={parent.bucket.color} over={parent.over} />
+            {parent.children.length > 0 && (!collapsed.has(parent.bucket.id!) || q !== '') && (
+              <ul className={cn('divide-y', parent.limit != null && 'mt-3')}>
                 {parent.children.map((child) => (
-                  <li key={child.bucket.id} className="flex items-center justify-between py-2 text-sm">
-                    <span>
+                  <li key={child.bucket.id} className="py-2 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate">
                       <ColorDot color={child.bucket.color} />
-                      {child.bucket.name}
+                      <Link
+                        to={`/transactions?bucket=${child.bucket.id}`}
+                        className="hover:underline"
+                        title={`View ${child.bucket.name} transactions`}
+                      >
+                        {child.bucket.name}
+                      </Link>
                       {child.over && (
                         <Badge variant="warning" className="ml-2">
                           over budget
                         </Badge>
                       )}
                     </span>
-                    <span className="flex items-center gap-2">
-                      <span className="tabular-nums text-muted-foreground">
-                        {fmtUsd(child.spent)}
-                        {child.limit != null && <> / {fmtUsd(child.limit)}</>}
-                      </span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span className="tabular-nums text-muted-foreground">{fmt(child.spent)} /</span>
+                      <InlineLimit bucket={child.bucket} />
                       <Button
                         variant="ghost"
                         size="icon"
@@ -193,13 +359,22 @@ export function BucketManager() {
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </span>
+                    </div>
+                    <div className="mt-1.5">
+                      <Bar spent={child.spent} limit={child.limit} color={child.bucket.color} over={child.over} />
+                    </div>
                   </li>
                 ))}
               </ul>
-            </CardContent>
+            )}
+          </CardContent>
           )}
         </Card>
       ))}
+
+      {q !== '' && visibleTree.length === 0 && (
+        <p className="py-4 text-center text-sm text-muted-foreground">No buckets match "{query}".</p>
+      )}
 
       {adding && (
         <AddBucketDialog
@@ -214,6 +389,9 @@ export function BucketManager() {
       {editing && <BucketFormDialog state={editing} buckets={buckets} onClose={() => setEditing(null)} />}
       {splitting && (
         <SplitWeeksDialog bucket={splitting} buckets={buckets} onClose={() => setSplitting(null)} />
+      )}
+      {suggesting && (
+        <SuggestBudgetsDialog buckets={buckets} transactions={allTxs} onClose={() => setSuggesting(false)} />
       )}
       {deleting && <DeleteBucketDialog bucket={deleting} buckets={buckets} onClose={() => setDeleting(null)} />}
       {duplicating && (

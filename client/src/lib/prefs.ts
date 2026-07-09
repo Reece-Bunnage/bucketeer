@@ -27,6 +27,8 @@ export interface Prefs {
   compactTables: boolean;
   /** Dashboard widget order (drag-and-drop). Keys from DEFAULT_WIDGET_ORDER. */
   widgetOrder: string[];
+  /** Parent bucket ids whose child list is collapsed on the Buckets page. */
+  collapsedBuckets: number[];
 }
 
 export const DEFAULT_WIDGET_ORDER = [
@@ -65,6 +67,7 @@ export const DEFAULT_PREFS: Prefs = {
   exactCents: false,
   compactTables: false,
   widgetOrder: DEFAULT_WIDGET_ORDER,
+  collapsedBuckets: [],
 };
 
 export type AccentName = 'blue' | 'violet' | 'green' | 'orange' | 'rose' | 'teal';
