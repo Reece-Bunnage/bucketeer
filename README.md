@@ -127,7 +127,10 @@ Terminal, `cd bucketeer`, `npm run dev`.
    its budget evenly so you can track spending week by week — and the duplicate button makes numbered
    copies of any bucket. Every bucket shows a live progress bar; click any budget number to edit it in
    place; **Suggest budgets** proposes limits from your last 3 months of spending (preview before
-   applying); parent cards collapse; and clicking a bucket name jumps to its transactions.
+   applying); parent cards collapse; and clicking a bucket name jumps to its transactions. A
+   **Monthly | Weekly** toggle switches every bucket between one month progress bar and per-week
+   mini bars (calendar weeks, current week highlighted) — compare how each week went without
+   creating Week 1–4 sub-buckets.
 2. **Settings → Connect a bank (Teller)** — log into your bank in the popup; accounts and
    transactions sync in.
 3. **Rules** — start with **Settings → Rules → Add common rules**: ready-made packs that auto-file

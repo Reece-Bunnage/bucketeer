@@ -6,7 +6,7 @@ import { createStarterBuckets } from '@/lib/db/seed';
 import { ACCENTS, BUCKET_COLOR_PALETTE, updatePrefs, usePrefs } from '@/lib/prefs';
 import { cn } from '@/lib/utils';
 import { useAllTransactions, useBuckets, useCurrentMonthTransactions } from '@/hooks/useData';
-import { bucketSpendTree } from '@/lib/analytics';
+import { bucketSpendTree, monthWeeks, subtreeIds, weeklySpend, type WeekSegment } from '@/lib/analytics';
 import { fmtUsd, fmtUsdExact } from '@/lib/utils';
 import type { Bucket } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,62 @@ function Bar({ spent, limit, color, over }: { spent: number; limit: number | nul
   return (
     <div className="h-2 overflow-hidden rounded-full bg-muted">
       <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: fill }} />
+    </div>
+  );
+}
+
+/**
+ * Weekly view: one mini bar per calendar week (Sun–Sat). With a monthly
+ * limit, each week's fill is measured against its prorated share
+ * (limit × days-in-week ÷ days-in-month) and over-weeks go amber + ⚠.
+ * Without a limit, bars scale to the bucket's biggest week — pure
+ * week-to-week comparison.
+ */
+function WeekBars({
+  amounts,
+  segments,
+  monthlyLimit,
+  color,
+}: {
+  amounts: number[];
+  segments: WeekSegment[];
+  monthlyLimit: number | null;
+  color?: string | null;
+}) {
+  const prefs = usePrefs();
+  const fmt = prefs.exactCents ? fmtUsdExact : fmtUsd;
+  const daysInMonth = segments.reduce((sum, s) => sum + s.days, 0);
+  const maxAmount = Math.max(...amounts, 1);
+  const baseFill = color ?? ACCENTS[prefs.accent]?.chart ?? ACCENTS.blue.chart;
+
+  return (
+    <div className="flex gap-2">
+      {segments.map((seg, i) => {
+        const weekBudget = monthlyLimit != null ? (monthlyLimit * seg.days) / daysInMonth : null;
+        const over = weekBudget != null && amounts[i] > weekBudget;
+        const pct =
+          weekBudget != null && weekBudget > 0
+            ? Math.min(100, (amounts[i] / weekBudget) * 100)
+            : (amounts[i] / maxAmount) * 100;
+        return (
+          <div key={seg.start} className="min-w-0 flex-1" title={weekBudget != null ? `${seg.label}: ${fmt(amounts[i])} of ~${fmt(weekBudget)}` : `${seg.label}: ${fmt(amounts[i])}`}>
+            <p className={cn('truncate text-[10px] leading-4', seg.current ? 'font-semibold text-foreground' : 'text-muted-foreground')}>
+              {seg.label}
+              {seg.current && ' · now'}
+            </p>
+            <div className="h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${pct}%`, backgroundColor: over ? '#b45309' : baseFill }}
+              />
+            </div>
+            <p className="text-[11px] tabular-nums text-muted-foreground">
+              {fmt(amounts[i])}
+              {over && <span title="Over this week's share of the budget"> ⚠</span>}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -132,6 +188,9 @@ export function BucketManager() {
           )
           .filter((p) => matches(p.bucket.name) || p.children.length > 0);
 
+  const weekly = prefs.bucketsView === 'weekly';
+  const segments = monthWeeks();
+
   const collapsed = new Set(prefs.collapsedBuckets);
   const toggleCollapse = (id: number) =>
     updatePrefs({
@@ -150,6 +209,22 @@ export function BucketManager() {
           </p>
         </div>
         <div className="flex gap-2">
+          <div className="flex rounded-md border p-0.5" role="group" aria-label="Bucket view">
+            {(['monthly', 'weekly'] as const).map((view) => (
+              <button
+                key={view}
+                type="button"
+                onClick={() => updatePrefs({ bucketsView: view })}
+                className={cn(
+                  'rounded px-2.5 py-1 text-xs font-medium capitalize transition-colors',
+                  prefs.bucketsView === view ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                )}
+                aria-pressed={prefs.bucketsView === view}
+              >
+                {view}
+              </button>
+            ))}
+          </div>
           <Button variant="outline" onClick={() => setSuggesting(true)}>
             <Lightbulb className="h-4 w-4" /> Suggest budgets
           </Button>
@@ -175,12 +250,21 @@ export function BucketManager() {
                 )}
               </span>
             </div>
-            <Bar
-              spent={totals.spent}
-              limit={totals.budget > 0 ? totals.budget : null}
-              color={null}
-              over={totals.budget > 0 && totals.spent > totals.budget}
-            />
+            {weekly ? (
+              <WeekBars
+                amounts={weeklySpend(null, monthTxs, segments)}
+                segments={segments}
+                monthlyLimit={totals.budget > 0 ? totals.budget : null}
+                color={null}
+              />
+            ) : (
+              <Bar
+                spent={totals.spent}
+                limit={totals.budget > 0 ? totals.budget : null}
+                color={null}
+                over={totals.budget > 0 && totals.spent > totals.budget}
+              />
+            )}
           </CardContent>
         </Card>
       )}
@@ -307,9 +391,18 @@ export function BucketManager() {
               </Button>
             </div>
           </CardHeader>
-          {(parent.limit != null || parent.children.length > 0) && (
+          {(parent.limit != null || parent.children.length > 0 || weekly) && (
           <CardContent>
-            <Bar spent={parent.spent} limit={parent.limit} color={parent.bucket.color} over={parent.over} />
+            {weekly ? (
+              <WeekBars
+                amounts={weeklySpend(subtreeIds(parent), monthTxs, segments)}
+                segments={segments}
+                monthlyLimit={parent.limit}
+                color={parent.bucket.color}
+              />
+            ) : (
+              <Bar spent={parent.spent} limit={parent.limit} color={parent.bucket.color} over={parent.over} />
+            )}
             {parent.children.length > 0 && (!collapsed.has(parent.bucket.id!) || q !== '') && (
               <ul className={cn('divide-y', parent.limit != null && 'mt-3')}>
                 {parent.children.map((child) => (
@@ -361,7 +454,16 @@ export function BucketManager() {
                     </span>
                     </div>
                     <div className="mt-1.5">
-                      <Bar spent={child.spent} limit={child.limit} color={child.bucket.color} over={child.over} />
+                      {weekly ? (
+                        <WeekBars
+                          amounts={weeklySpend(subtreeIds(child), monthTxs, segments)}
+                          segments={segments}
+                          monthlyLimit={child.limit}
+                          color={child.bucket.color}
+                        />
+                      ) : (
+                        <Bar spent={child.spent} limit={child.limit} color={child.bucket.color} over={child.over} />
+                      )}
                     </div>
                   </li>
                 ))}

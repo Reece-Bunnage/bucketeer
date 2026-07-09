@@ -29,6 +29,8 @@ export interface Prefs {
   widgetOrder: string[];
   /** Parent bucket ids whose child list is collapsed on the Buckets page. */
   collapsedBuckets: number[];
+  /** Buckets page: single monthly progress bar, or per-week mini bars. */
+  bucketsView: 'monthly' | 'weekly';
 }
 
 export const DEFAULT_WIDGET_ORDER = [
@@ -68,6 +70,7 @@ export const DEFAULT_PREFS: Prefs = {
   compactTables: false,
   widgetOrder: DEFAULT_WIDGET_ORDER,
   collapsedBuckets: [],
+  bucketsView: 'monthly',
 };
 
 export type AccentName = 'blue' | 'violet' | 'green' | 'orange' | 'rose' | 'teal';

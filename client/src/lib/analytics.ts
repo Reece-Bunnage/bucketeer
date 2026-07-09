@@ -95,6 +95,71 @@ export function suggestBudgets(buckets: Bucket[], transactions: Transaction[]): 
   return suggestions.sort((a, b) => b.suggested - a.suggested);
 }
 
+export interface WeekSegment {
+  start: string; // YYYY-MM-DD (inclusive)
+  end: string; // YYYY-MM-DD (inclusive)
+  label: string; // e.g. "6/1–6/6"
+  days: number;
+  /** True if today falls inside this segment. */
+  current: boolean;
+}
+
+/**
+ * Split the current month into calendar weeks (Sun–Sat). The first and last
+ * segments are usually partial, so callers prorate weekly budgets by `days`.
+ */
+export function monthWeeks(now = new Date()): WeekSegment[] {
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const iso = (day: number) =>
+    `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const segments: WeekSegment[] = [];
+  let start = 1;
+  while (start <= daysInMonth) {
+    const startDow = new Date(year, month, start).getDay(); // 0 = Sunday
+    const end = Math.min(daysInMonth, start + (6 - startDow));
+    segments.push({
+      start: iso(start),
+      end: iso(end),
+      label: `${month + 1}/${start}–${month + 1}/${end}`,
+      days: end - start + 1,
+      current: now.getDate() >= start && now.getDate() <= end,
+    });
+    start = end + 1;
+  }
+  return segments;
+}
+
+/** All bucket ids in a BucketSpend subtree (the node + its descendants). */
+export function subtreeIds(node: BucketSpend): Set<number> {
+  const ids = new Set<number>([node.bucket.id!]);
+  const walk = (n: BucketSpend) => {
+    for (const c of n.children) {
+      ids.add(c.bucket.id!);
+      walk(c);
+    }
+  };
+  walk(node);
+  return ids;
+}
+
+/** Spending (positive dollars) per week segment for the given bucket ids. */
+export function weeklySpend(
+  bucketIds: Set<number> | null, // null = ALL spending regardless of bucket
+  monthTransactions: Transaction[],
+  segments: WeekSegment[]
+): number[] {
+  const totals = segments.map(() => 0);
+  for (const tx of monthTransactions) {
+    if (tx.amount >= 0) continue;
+    if (bucketIds && (tx.bucketId == null || !bucketIds.has(tx.bucketId))) continue;
+    const idx = segments.findIndex((s) => tx.date >= s.start && tx.date <= s.end);
+    if (idx !== -1) totals[idx] += -tx.amount;
+  }
+  return totals;
+}
+
 /** Headline totals for one month's transactions. */
 export function monthTotals(monthTransactions: Transaction[]) {
   let income = 0;
